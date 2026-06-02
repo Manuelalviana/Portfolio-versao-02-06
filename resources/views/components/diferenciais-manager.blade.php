@@ -1,11 +1,13 @@
+@props(['idiomaId' => null])
+
 @php
     // Extrai os nomes dos ícones disponíveis
     $iconNames = collect($icones)->pluck('name')->filter()->unique()->values()->all();
-    
+
     if (empty($iconNames) && is_array($icones)) {
         $iconNames = $icones;
     }
-    
+
     $diferenciaisPadraoNomes = [
         'Adaptável', 'Amplo espectro', 'Automatizado', 'Autônomo', 'Baixa concorrência',
         'Customizável', 'Digital', 'Diminuição toxicidade', 'Escalonáveis', 'Especificidade',
@@ -17,7 +19,7 @@
         'Saúde global', 'Segurança', 'Sem uso de animais', 'Sem uso de animais para experimentação',
         'Sustentável', 'Tecnologia Nacional', 'Teleatendimento', 'Tempo real'
     ];
-    
+
     $diferenciaisPadrao = collect($diferenciaisDisponiveis)
         ->filter(function ($item) use ($diferenciaisPadraoNomes) {
             // suporta objeto Eloquent e array
@@ -30,14 +32,15 @@
             $nome  = is_array($item) ? ($item['nome']  ?? '')   : $item->nome;
             $icone = is_array($item) ? ($item['icone'] ?? 'star') : ($item->icone ?? 'star');
             return [
-                'id'    => $id,
-                'nome'  => $nome,
-                'icone' => $icone,
+                'id'      => $id,
+                'nome'    => $nome,
+                'icone'   => $icone,
+                'id_idioma' => is_array($item) ? ($item['id_idioma'] ?? null) : ($item->id_idioma ?? null),
             ];
         })
         ->values()
         ->all();
-    
+
     // selectedIds: suporta coleção de objetos e array de arrays
     $selectedIds = collect($oldDiferenciais)
         ->map(fn($i) => is_array($i) ? ($i['id'] ?? null) : ($i->id ?? null))
@@ -52,7 +55,7 @@
             ->values()
             ->all();
     }
-    
+
     // customSelected: itens sem id (personalizados)
     $customSelected = collect($oldDiferenciais)
         ->filter(function ($item) {
@@ -75,14 +78,14 @@
     }
 @endphp
 
-<div class="form-section" x-data="diferenciaisSelect()" x-init="init()">
+<div class="form-section" x-data="diferenciaisSelect(@json($idiomaId))" x-init="init()">
     <h3 class="form-section-title"><b> Diferenciais </b></h3>
     <p class="form-hint">Selecione os diferenciais que se aplicam à sua tecnologia:</p>
 
     <!-- Select customizado com ícones -->
     <div class="form-field">
         <label class="form-label">Adicionar diferencial</label>
-        
+
         <div class="custom-select-wrapper">
             <!-- Dropdown button -->
             <button type="button" class="custom-select-button" @click="toggleDropdown()">
@@ -97,14 +100,14 @@
                 </template>
                 <span class="material-symbols-outlined select-arrow" :class="{ 'rotated': showDropdown }">expand_more</span>
             </button>
-            
+
             <!-- Dropdown menu com ícones -->
             <div class="custom-select-dropdown" x-show="showDropdown" x-cloak @click.away="showDropdown = false">
                 <div class="dropdown-search">
                     <span class="material-symbols-outlined">search</span>
                     <input type="text" x-model="searchQuery" placeholder="Buscar diferencial..." class="dropdown-search-input" @click.stop>
                 </div>
-                
+
                 <div class="dropdown-options">
                     <!-- Optgroup: Diferenciais Padrão -->
                     <div class="dropdown-optgroup">
@@ -120,7 +123,7 @@
                             Nenhum diferencial encontrado
                         </div>
                     </div>
-                    
+
                     <!-- Optgroup: Criar Novo -->
                     <div class="dropdown-optgroup">
                         <div class="dropdown-optgroup-label">Criar Novo</div>
@@ -153,19 +156,20 @@
                             </button>
                         </div>
                     </div>
-                    
+
                     <!-- Campos hidden para envio no form -->
                     <input type="hidden" :name="'diferenciais[' + idx + '][id]'" :value="diff.tipo === 'padrao' ? diff.id : ''">
                     <input type="hidden" :name="'diferenciais[' + idx + '][nome]'" :value="diff.nome">
                     <input type="hidden" :name="'diferenciais[' + idx + '][icone]'" :value="diff.icone">
                     <input type="hidden" :name="'diferenciais[' + idx + '][tipo]'" :value="diff.tipo">
+                    <input type="hidden" :name="'diferenciais[' + idx + '][id_idioma]'" :value="diff.id_idioma ?? idiomaId">
                     <template x-if="diff.tipo === 'personalizado'">
                         <input type="hidden" :name="'diferenciais[' + idx + '][descricao]'" :value="diff.descricao">
                     </template>
                 </div>
             </template>
         </div>
-        
+
         <p class="form-hint" style="margin-top: 0.5rem;">
             <span x-text="selectedDiferenciais.length"></span> diferencial(is) selecionado(s)
         </p>
@@ -180,15 +184,15 @@
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            
+
             <div class="modal-body">
                 <div class="form-field">
                     <label class="form-label">Nome do diferencial <span class="text-danger">*</span></label>
-                    <input 
-                        type="text" 
-                        x-model="customDiferencial.nome" 
-                        class="form-input" 
-                        maxlength="40" 
+                    <input
+                        type="text"
+                        x-model="customDiferencial.nome"
+                        class="form-input"
+                        maxlength="40"
                         placeholder="Digite o nome do diferencial"
                     >
                     <div class="form-counter" x-text="(40 - (customDiferencial.nome || '').length) + ' caracteres restantes'"></div>
@@ -211,10 +215,10 @@
 
                 <div class="form-field">
                     <label class="form-label">Descrição (opcional)</label>
-                    <textarea 
-                        x-model="customDiferencial.descricao" 
-                        rows="3" 
-                        class="form-textarea" 
+                    <textarea
+                        x-model="customDiferencial.descricao"
+                        rows="3"
+                        class="form-textarea"
                         placeholder="Descrição do diferencial personalizados (até 200 caracteres)"
                         maxlength="200"
                     ></textarea>
@@ -232,13 +236,13 @@
 
 <style>
     [x-cloak] { display: none !important; }
-    
+
     /* Custom Select */
     .custom-select-wrapper {
         position: relative;
         width: 100%;
     }
-    
+
     .custom-select-button {
         width: 100%;
         display: flex;
@@ -253,38 +257,38 @@
         cursor: pointer;
         transition: all 0.2s;
     }
-    
+
     .custom-select-button:hover {
         border-color: #cbd5e1;
     }
-    
+
     .custom-select-button:focus {
         outline: none;
         border-color: #3b82f6;
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
-    
+
     .selected-option-display {
         display: flex;
         align-items: center;
         gap: 0.5rem;
     }
-    
+
     .selected-option-display .material-symbols-outlined {
         font-size: 1.25rem;
         color: #4a5568;
     }
-    
+
     .select-arrow {
         font-size: 1.25rem;
         color: #64748b;
         transition: transform 0.2s;
     }
-    
+
     .select-arrow.rotated {
         transform: rotate(180deg);
     }
-    
+
     .custom-select-dropdown {
         position: absolute;
         top: 100%;
@@ -301,7 +305,7 @@
         display: flex;
         flex-direction: column;
     }
-    
+
     .dropdown-search {
         display: flex;
         align-items: center;
@@ -309,32 +313,32 @@
         padding: 0.75rem;
         border-bottom: 1px solid #e2e8f0;
     }
-    
+
     .dropdown-search .material-symbols-outlined {
         font-size: 1.25rem;
         color: #64748b;
     }
-    
+
     .dropdown-search-input {
         flex: 1;
         border: none;
         outline: none;
         font-size: 0.875rem;
     }
-    
+
     .dropdown-search-input::placeholder {
         color: #94a3b8;
     }
-    
+
     .dropdown-options {
         overflow-y: auto;
         max-height: 280px;
     }
-    
+
     .dropdown-optgroup {
         padding: 0.5rem 0;
     }
-    
+
     .dropdown-optgroup-label {
         padding: 0.375rem 0.75rem;
         font-size: 0.75rem;
@@ -343,7 +347,7 @@
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
-    
+
     .dropdown-option {
         display: flex;
         align-items: center;
@@ -352,72 +356,72 @@
         cursor: pointer;
         transition: background 0.15s;
     }
-    
+
     .dropdown-option:hover {
         background: #f1f5f9;
     }
-    
+
     .dropdown-option .material-symbols-outlined {
         font-size: 1.25rem;
         color: #4a5568;
     }
-    
+
     .check-mark {
         margin-left: auto;
         color: #3b82f6;
         font-size: 1rem;
     }
-    
+
     .option-create {
         color: #3b82f6;
         font-weight: 500;
     }
-    
+
     .option-create .material-symbols-outlined {
         color: #3b82f6;
     }
-    
+
     .dropdown-empty {
         padding: 0.75rem;
         text-align: center;
         color: #94a3b8;
         font-size: 0.875rem;
     }
-    
+
     /* Selected list */
     .selected-diferenciais-list {
         margin-top: 1rem;
     }
-    
+
     .diferenciais-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
         gap: 0.75rem;
     }
-    
+
     .diferencial-card {
         border: 2px solid #e2e8f0;
         border-radius: 0.5rem;
         background: white;
         transition: all 0.2s;
     }
-    
+
     .diferencial-card:hover {
         border-color: #cbd5e1;
     }
-    
+
     .diferencial-card.selected {
         border-color: #3b82f6;
         background: #eff6ff;
     }
-    
+
     .diferencial-card-content {
         display: flex;
         align-items: center;
         gap: 0.75rem;
         padding: 0.75rem;
     }
-    
+
     .diferencial-icon {
         flex-shrink: 0;
         width: 40px;
@@ -428,34 +432,34 @@
         background: #f1f5f9;
         border-radius: 0.5rem;
     }
-    
+
     .diferencial-icon .material-symbols-outlined {
         font-size: 1.5rem;
         color: #4a5568;
     }
-    
+
     .diferencial-info {
         flex: 1;
         display: flex;
         flex-direction: column;
         gap: 0.125rem;
     }
-    
+
     .diferencial-nome {
         font-size: 0.875rem;
         font-weight: 600;
         color: #1e293b;
     }
-    
+
     .diferencial-tipo {
         font-size: 0.75rem;
         color: #64748b;
     }
-    
+
     .diferencial-actions {
         flex-shrink: 0;
     }
-    
+
     .btn-remove {
         display: flex;
         align-items: center;
@@ -469,12 +473,12 @@
         cursor: pointer;
         transition: all 0.2s;
     }
-    
+
     .btn-remove:hover {
         background: #fee2e2;
         color: #ef4444;
     }
-    
+
     /* Modal */
     .modal-overlay {
         position: fixed;
@@ -489,7 +493,7 @@
         z-index: 1000;
         padding: 1rem;
     }
-    
+
     .modal-content {
         background: white;
         border-radius: 0.75rem;
@@ -499,7 +503,7 @@
         overflow-y: auto;
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     }
-    
+
     .modal-header {
         display: flex;
         align-items: center;
@@ -507,14 +511,14 @@
         padding: 1rem 1.5rem;
         border-bottom: 1px solid #e2e8f0;
     }
-    
+
     .modal-title {
         font-size: 1.125rem;
         font-weight: 600;
         color: #1e293b;
         margin: 0;
     }
-    
+
     .modal-close {
         display: flex;
         align-items: center;
@@ -528,16 +532,16 @@
         cursor: pointer;
         transition: all 0.2s;
     }
-    
+
     .modal-close:hover {
         background: #f1f5f9;
         color: #1e293b;
     }
-    
+
     .modal-body {
         padding: 1.5rem;
     }
-    
+
     .modal-footer {
         display: flex;
         justify-content: flex-end;
@@ -545,13 +549,13 @@
         padding: 1rem 1.5rem;
         border-top: 1px solid #e2e8f0;
     }
-    
+
     .diferencial-icone-row {
         display: flex;
         align-items: center;
         gap: 0.75rem;
     }
-    
+
     .diferencial-icone-preview {
         width: 48px;
         height: 48px;
@@ -562,12 +566,12 @@
         border-radius: 0.5rem;
         border: 1px solid #e2e8f0;
     }
-    
+
     .diferencial-icone-preview .material-symbols-outlined {
         font-size: 1.75rem;
         color: #4a5568;
     }
-    
+
     /* Botões */
     .btn-form {
         padding: 0.5rem 1rem;
@@ -580,29 +584,29 @@
         align-items: center;
         gap: 0.375rem;
     }
-    
+
     .btn-form--outline {
         background: transparent;
         border: 1px solid #cbd5e1;
         color: #475569;
     }
-    
+
     .btn-form--outline:hover {
         background: #f1f5f9;
         border-color: #94a3b8;
     }
-    
+
     .btn-form--primary {
         background: #3b82f6;
         border: 1px solid #3b82f6;
         color: white;
     }
-    
+
     .btn-form--primary:hover {
         background: #2563eb;
         border-color: #2563eb;
     }
-    
+
     .text-danger { color: #ef4444; }
     .form-hint { font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; }
     .form-counter { font-size: 0.75rem; color: #94a3b8; text-align: right; margin-top: 0.25rem; }
@@ -616,6 +620,7 @@ function diferenciaisSelect() {
         selectedDiferenciais: [],
         showCustomModal: false,
         customDiferencial: { nome: '', icone: 'help', descricao: '' },
+        idiomaId: @json($idiomaId ?? null),
         availableDiferenciais: @json($diferenciaisPadrao),
 
         get filteredPadrao() {
@@ -639,7 +644,8 @@ function diferenciaisSelect() {
                             id: diff.id,
                             nome: diff.nome,
                             icone: diff.icone,
-                            tipo: 'padrao'
+                            tipo: 'padrao',
+                            id_idioma: diff.id_idioma ?? self.idiomaId,
                         });
                         adicionados.add('padrao_' + id);
                     }
@@ -655,7 +661,8 @@ function diferenciaisSelect() {
                         nome: nome,
                         icone: item.icone || 'help',
                         descricao: item.descricao || '',
-                        tipo: 'personalizado'
+                        tipo: 'personalizado',
+                        id_idioma: item.id_idioma ?? self.idiomaId,
                     });
                     adicionados.add('custom_' + nome);
                 });
@@ -675,7 +682,11 @@ function diferenciaisSelect() {
                 return;
             }
             this.selectedDiferenciais.push({
-                id: diff.id, nome: diff.nome, icone: diff.icone, tipo: 'padrao'
+                id: diff.id,
+                nome: diff.nome,
+                icone: diff.icone,
+                tipo: 'padrao',
+                id_idioma: diff.id_idioma ?? this.idiomaId,
             });
             this.showDropdown = false;
             this.searchQuery = '';
@@ -706,7 +717,8 @@ function diferenciaisSelect() {
                 nome: this.customDiferencial.nome,
                 icone: this.customDiferencial.icone || 'help',
                 descricao: this.customDiferencial.descricao,
-                tipo: 'personalizado'
+                tipo: 'personalizado',
+                id_idioma: this.idiomaId,
             });
             this.customDiferencial = { nome: '', icone: 'help', descricao: '' };
             this.closeModal();

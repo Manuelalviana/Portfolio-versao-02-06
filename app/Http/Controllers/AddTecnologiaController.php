@@ -34,11 +34,15 @@ class AddTecnologiaController extends Controller
         // Busca unidades
         $unidades = Unidade::orderBy('nome')->get();
 
-        // Busca diferenciais (sem icone do banco, pois os ícones são do Material Icons)
-        $diferenciais = Diferencial::orderBy('nome')->get();
+        // Busca diferenciais por idioma
+        $diferenciais = Diferencial::where('id_idioma', $idiomaId)
+            ->orderBy('nome')
+            ->get();
 
-          // ✅ ADICIONE ESTA LINHA - Busca tipos de propriedade
-         $tipos_propriedade = TipoPropriedade::orderBy('nome')->get();
+        // Busca tipos de propriedade por idioma
+        $tipos_propriedade = TipoPropriedade::where('id_idioma', $idiomaId)
+            ->orderBy('nome')
+            ->get();
 
          // Busca os ícones (para o select de ícones personalizados)
         $icones = Icone::orderBy('name')->pluck('name')->toArray();
@@ -76,6 +80,7 @@ class AddTecnologiaController extends Controller
             'palavras_chave',
             'tipos_propriedade',
             'idiomaSelecionado',
+            'idiomaId',
             'icones'
         ));
     }
@@ -114,7 +119,8 @@ class AddTecnologiaController extends Controller
 */
         $situacoes = Situacao::orderBy('nome')->get();
         $unidades = Unidade::orderBy('nome')->get();
-        $categorias = Categoria::where('id_idioma', $tecnologia->idioma === 'en' ? 2 : 1)
+        $idiomaId = $tecnologia->idioma === 'en' ? 2 : 1;
+        $categorias = Categoria::where('id_idioma', $idiomaId)
             ->orderBy('nome')
             ->get();
         $estagiosPorCategoria = Estagio::where('id_idioma', $tecnologia->idioma === 'en' ? 2 : 1)
@@ -128,8 +134,12 @@ class AddTecnologiaController extends Controller
                 })->values()->all();
             })
             ->toArray();
-        $diferenciais = Diferencial::orderBy('nome')->get();
-        $tipos_propriedade = TipoPropriedade::orderBy('nome')->get();
+        $diferenciais = Diferencial::where('id_idioma', $tecnologia->idioma === 'en' ? 2 : 1)
+            ->orderBy('nome')
+            ->get();
+        $tipos_propriedade = TipoPropriedade::where('id_idioma', $tecnologia->idioma === 'en' ? 2 : 1)
+            ->orderBy('nome')
+            ->get();
 
         if ($situacoes->isEmpty()) {
             $situacoes = collect([
@@ -147,7 +157,8 @@ class AddTecnologiaController extends Controller
             'categorias',
             'diferenciais',
             'tipos_propriedade',
-            'estagiosPorCategoria'
+            'estagiosPorCategoria',
+            'idiomaId'
         ));
     }
 
@@ -185,12 +196,15 @@ class AddTecnologiaController extends Controller
             'diferenciais.*.tipo' => 'nullable|string|in:padrao,personalizado',
             'diferenciais.*.icone' => 'nullable|string|max:100',
             'diferenciais.*.descricao' => 'nullable|string|max:200',
+            'diferenciais.*.id_idioma' => 'nullable|exists:idiomas,id',
             'outro_diferencial' => 'nullable|string|max:40',
             'possui_pi' => 'required|boolean',
             'tipo_propriedade_id' => 'nullable|array',
             'tipo_propriedade_id.*' => 'nullable|integer|exists:tipo_propriedade,id',
             'pi_descricao' => 'nullable|array',
             'pi_descricao.*' => 'nullable|string|max:2000',
+            'pi_link' => 'nullable|array',
+            'pi_link.*' => 'nullable|url|max:255',
             'inventores' => 'nullable|array',
             'inventores.*.nome' => 'nullable|string|max:255',
             'inventores.*.coordenador' => 'nullable|boolean',
@@ -209,7 +223,7 @@ class AddTecnologiaController extends Controller
         $situacaoId = Situacao::firstWhere('nome', 'Rascunho')?->id
             ?? Situacao::firstOrCreate(['nome' => 'Rascunho'])->id;
 
-        DB::transaction(function () use ($validated, $numeroCaso, $slug, $situacaoId, $request) {
+        DB::transaction(function () use ($validated, $numeroCaso, $slug, $situacaoId, $request, $idiomaId) {
             $tecnologia = Tecnologia::create([
                 'titulo' => $validated['titulo'],
                 'idioma' => $validated['idioma'],
@@ -261,7 +275,7 @@ class AddTecnologiaController extends Controller
                     if ($tipo === 'personalizado' && !empty($diff['nome'])) {
                         $modelo = Diferencial::firstOrCreate(
                             ['nome' => trim($diff['nome'])],
-                            ['icone' => $diff['icone'] ?? 'help']
+                            ['icone' => $diff['icone'] ?? 'help', 'id_idioma' => $diff['id_idioma'] ?? $idiomaId]
                         );
                         $idsParaSinc[] = $modelo->id;
 
@@ -278,19 +292,23 @@ class AddTecnologiaController extends Controller
 //   if (!empty($validated['diferenciais'])) { $tecnologia->diferenciais()->sync($validated['diferenciais']);  }
 
             if (!empty($validated['outro_diferencial'])) {
-                $outro = Diferencial::firstOrCreate([
-                    'nome' => $validated['outro_diferencial'],
-                ]);
+                $outro = Diferencial::firstOrCreate(
+                    ['nome' => $validated['outro_diferencial']],
+                    ['id_idioma' => $idiomaId]
+                );
                 $tecnologia->diferenciais()->syncWithoutDetaching([$outro->id]);
             }
 
-            if (!empty($validated['tipo_propriedade_id']) && !empty($validated['pi_descricao'])) {
+            if (!empty($validated['tipo_propriedade_id'])) {
                 foreach ($validated['tipo_propriedade_id'] as $index => $tipoId) {
                     $descricao = $validated['pi_descricao'][$index] ?? null;
-                    if ($tipoId && $descricao) {
+                    $link = $validated['pi_link'][$index] ?? null;
+                    if ($tipoId) {
                         $tecnologia->propriedades_intelectuais()->create([
+                            'tipo_propriedade_id' => $tipoId,
                             'tipo' => TipoPropriedade::find($tipoId)?->nome,
                             'descricao' => $descricao,
+                            'link' => $link,
                         ]);
                     }
                 }
@@ -343,8 +361,11 @@ class AddTecnologiaController extends Controller
             'diferenciais.*.tipo' => 'nullable|string|in:padrao,personalizado',
             'diferenciais.*.icone' => 'nullable|string|max:100',
             'diferenciais.*.descricao' => 'nullable|string|max:200',
+            'diferenciais.*.id_idioma' => 'nullable|exists:idiomas,id',
             'tipo_propriedade_id' => 'nullable|array',
             'tipo_propriedade_id.*' => 'nullable|integer|exists:tipo_propriedade,id',
+            'pi_link' => 'nullable|array',
+            'pi_link.*' => 'nullable|url|max:255',
             'tipo_tecnologia' => 'nullable|exists:categorias,id',
             'estagio_id' => [
                 'nullable',
@@ -382,6 +403,35 @@ class AddTecnologiaController extends Controller
         }
 
         $tecnologia->update(['estagio_id' => $validated['estagio_id'] ?? null]);
+
+        // Sincronizar diferenciais
+        if (!empty($validated['diferenciais'])) {
+            $idsParaSinc = [];
+            $idiomaId = $tecnologia->idioma === 'en' ? 2 : 1;
+
+            foreach ($validated['diferenciais'] as $diff) {
+                $tipo = $diff['tipo'] ?? 'padrao';
+
+                if ($tipo === 'personalizado' && !empty($diff['nome'])) {
+                    $modelo = Diferencial::firstOrCreate(
+                        ['nome' => trim($diff['nome'])],
+                        ['icone' => $diff['icone'] ?? 'help', 'id_idioma' => $diff['id_idioma'] ?? $idiomaId]
+                    );
+                    $idsParaSinc[] = $modelo->id;
+
+                } elseif (!empty($diff['id'])) {
+                    $idsParaSinc[] = (int) $diff['id'];
+                }
+            }
+
+            if (!empty($idsParaSinc)) {
+                $tecnologia->diferenciais()->sync($idsParaSinc);
+            } else {
+                $tecnologia->diferenciais()->detach();
+            }
+        } else {
+            $tecnologia->diferenciais()->detach();
+        }
 
         // Upload imagem
         if ($request->hasFile('imagem_lateral')) {

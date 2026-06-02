@@ -19,6 +19,7 @@ class PropriedadeIntelectual extends Model
         'link_propriedade',
         'numero_registro',
         'data_registro',
+        'link',
     ];
 
     public function tecnologia()

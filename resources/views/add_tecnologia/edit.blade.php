@@ -145,6 +145,7 @@
                             :diferenciaisDisponiveis="$diferenciais ?? []"
                             :oldDiferenciais="old('diferenciais', [])"
                             :selectedDiferenciais="$tecnologia->diferenciais->toArray()"
+                            :idiomaId="$idiomaId"
                         />
                     </div>
                 </details>
@@ -199,10 +200,16 @@
                                                             </option>
                                                         @endforeach
                                                     </select>
+                                                    <p class="form-hint"><a href="#" class="form-link">Informe aqui se não encontrar o tipo de propriedade intelectual</a></p>
                                                 </div>
                                                 <div class="form-field">
                                                     <label class="form-label">Descrição</label>
                                                     <textarea name="pi_descricao[]" class="form-textarea" rows="2">{{ $propriedade->descricao }}</textarea>
+                                                </div>
+                                                <div class="form-field" style="grid-column: span 2;">
+                                                    <label class="form-label">Link/Referência</label>
+                                                    <input type="url" name="pi_link[]" class="form-input" placeholder="https://..." maxlength="255" value="{{ $propriedade->link }}">
+                                                    <p class="form-hint">Link ou referência sobre a propriedade intelectual</p>
                                                 </div>
                                                 @if($index > 0)
                                                 <div class="form-field" style="grid-column: span 2;">
@@ -226,10 +233,16 @@
                                                         <option value="{{ $tipo->id }}">{{ $tipo->nome }}</option>
                                                     @endforeach
                                                 </select>
+                                                <p class="form-hint"><a href="#" class="form-link">Informe aqui se não encontrar o tipo de propriedade intelectual</a></p>
                                             </div>
                                             <div class="form-field">
                                                 <label class="form-label">Descrição</label>
                                                 <textarea name="pi_descricao[]" class="form-textarea" rows="2"></textarea>
+                                            </div>
+                                            <div class="form-field" style="grid-column: span 2;">
+                                                <label class="form-label">Link/Referência</label>
+                                                <input type="url" name="pi_link[]" class="form-input" placeholder="https://..." maxlength="255">
+                                                <p class="form-hint">Link ou referência sobre a propriedade intelectual</p>
                                             </div>
                                         </div>
                                     </div>
@@ -431,10 +444,16 @@
                                 <option value="{{ $tipo->id }}">{{ $tipo->nome }}</option>
                             @endforeach
                         </select>
+                        <p class="form-hint"><a href="#" class="form-link">Informe aqui se não encontrar o tipo de propriedade intelectual</a></p>
                     </div>
                     <div class="form-field">
                         <label class="form-label">Descrição</label>
                         <textarea name="pi_descricao[]" class="form-textarea" rows="2"></textarea>
+                    </div>
+                    <div class="form-field" style="grid-column: span 2;">
+                        <label class="form-label">Link/Referência</label>
+                        <input type="url" name="pi_link[]" class="form-input" placeholder="https://..." maxlength="255">
+                        <p class="form-hint">Link ou referência sobre a propriedade intelectual</p>
                     </div>
                     <div class="form-field" style="grid-column: span 2;">
                         <button type="button" class="btn-form btn-form--danger" onclick="this.closest('.propriedade-item').remove()">

@@ -21,7 +21,7 @@
 
     <section class="header-banner header-banner--compact">
         <div class="header-content">
-            <h1>Criar Tecnologia</h1> 
+            <h1>Criar Tecnologia</h1>
             <span class="header-content__subtitle">Cadastro no Portfólio de Inovação</span>
         </div>
         <div class="top-actions">
@@ -151,13 +151,18 @@
                             <p class="form-hint">Selecione o estágio correspondente à categoria e idioma.</p>
                         </div>
 
+                        @php
+                            $idiomaId = $idiomaId ?? (old('idioma', request()->get('idioma', 'pt-br')) === 'en' ? 2 : 1);
+                        @endphp
+
                         <!-- Diferenciais da Tecnologia - Componente com cards -->
                         <!-- add_tecnologia/index.blade.php -->
-                        <x-diferenciais-manager 
-                            :icones="$icones" 
+                        <x-diferenciais-manager
+                            :icones="$icones"
                             :diferenciaisDisponiveis="$diferenciais"
                             :oldDiferenciais="old('diferenciais', [])"
                             :selectedDiferenciais="[]"
+                            :idiomaId="$idiomaId"
                         />
                     </div>
                 </details>
@@ -206,10 +211,16 @@
                                                     <option value="{{ $tipo->id }}">{{ $tipo->nome }}</option>
                                                 @endforeach
                                             </select>
+                                            <p class="form-hint"><a href="#" class="form-link">Informe aqui se não encontrar o tipo de propriedade intelectual</a></p>
                                         </div>
                                         <div class="form-field">
                                             <label class="form-label">Descrição</label>
                                             <textarea name="pi_descricao[]" class="form-textarea" rows="2" placeholder="Descreva a propriedade intelectual..."></textarea>
+                                        </div>
+                                        <div class="form-field" style="grid-column: span 2;">
+                                            <label class="form-label">Link/Referência</label>
+                                            <input type="url" name="pi_link[]" class="form-input" placeholder="https://..." maxlength="255">
+                                            <p class="form-hint">Link ou referência sobre a propriedade intelectual</p>
                                         </div>
                                     </div>
                                 </div>
@@ -281,12 +292,12 @@
         .is-hidden {
             display: none;
         }
-        
+
         .propriedade-item,
         .inventor-item {
             animation: fadeIn 0.3s ease-in;
         }
-        
+
         .btn-form--danger {
             background: #fee2e2;
             border: 1px solid #fecaca;
@@ -299,12 +310,12 @@
             gap: 0.5rem;
             transition: all 0.2s;
         }
-        
+
         .btn-form--danger:hover {
             background: #fecaca;
             border-color: #f87171;
         }
-        
+
         .btn-form--ghost {
             background: transparent;
             border: 1px solid #cbd5e1;
@@ -317,16 +328,16 @@
             gap: 0.5rem;
             transition: all 0.2s;
         }
-        
+
         .btn-form--ghost:hover {
             background: #f1f5f9;
             border-color: #94a3b8;
         }
-        
+
         .form-actions--inline {
             margin-top: 1rem;
         }
-        
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -337,7 +348,7 @@
                 transform: translateY(0);
             }
         }
-        
+
         @media (max-width: 768px) {
             .form-grid--2 {
                 grid-template-columns: 1fr;
@@ -364,7 +375,7 @@
 
         // Controle de Propriedade Intelectual
         let propriedadeIndex = 1;
-        
+
         function togglePropriedades(select) {
             const container = document.getElementById('propriedadesContainer');
             if (select.value === '1') {
@@ -373,7 +384,7 @@
                 container.classList.add('is-hidden');
             }
         }
-        
+
         function adicionarPropriedadeIntelectual() {
             const container = document.getElementById('propriedadesList');
             const newItem = document.createElement('div');
@@ -391,10 +402,16 @@
                                 <option value="{{ $tipo->id }}">{{ $tipo->nome }}</option>
                             @endforeach
                         </select>
+                        <p class="form-hint"><a href="#" class="form-link">Informe aqui se não encontrar o tipo de propriedade intelectual</a></p>
                     </div>
                     <div class="form-field">
                         <label class="form-label">Descrição</label>
                         <textarea name="pi_descricao[]" class="form-textarea" rows="2" placeholder="Descreva a propriedade intelectual..."></textarea>
+                    </div>
+                    <div class="form-field" style="grid-column: span 2;">
+                        <label class="form-label">Link/Referência</label>
+                        <input type="url" name="pi_link[]" class="form-input" placeholder="https://..." maxlength="255">
+                        <p class="form-hint">Link ou referência sobre a propriedade intelectual</p>
                     </div>
                     <div class="form-field" style="grid-column: span 2;">
                         <button type="button" class="btn-form btn-form--danger" onclick="this.closest('.propriedade-item').remove()">
@@ -407,10 +424,10 @@
             container.appendChild(newItem);
             propriedadeIndex++;
         }
-        
+
         // Controle de Inventores
         let inventorIndex = 1;
-        
+
         function adicionarInventor() {
             const container = document.getElementById('inventoresContainer');
             const newItem = document.createElement('div');
